@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Test Case Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c2430;--muted:#5d6877;--line:#d9dee5;--accent:#2f6fed;--accent-t:#fff;--danger:#c93a3a;
+--s-passed:#1f8a4c;--s-failed:#c93a3a;--s-prog:#b7791f;--s-blocked:#7c4dcc;--s-yet:#5d6877;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14181e;--card:#1d232b;--text:#e8ecf1;--muted:#9aa5b3;--line:#323b46;--accent:#6b9bff;--accent-t:#0d1420;--danger:#f07070;
+--s-passed:#4cc27f;--s-failed:#f07070;--s-prog:#e4b04f;--s-blocked:#b08cf0;--s-yet:#9aa5b3;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14181e;--card:#1d232b;--text:#e8ecf1;--muted:#9aa5b3;--line:#323b46;--accent:#6b9bff;--accent-t:#0d1420;--danger:#f07070;
+--s-passed:#4cc27f;--s-failed:#f07070;--s-prog:#e4b04f;--s-blocked:#b08cf0;--s-yet:#9aa5b3;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:10px}
+.wrap{max-width:none;margin:0 auto}
+h1{font-size:20px;margin:0 0 14px}
+.project{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.project label{font-weight:600;white-space:nowrap}
+input,textarea,select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+textarea{resize:vertical;min-height:64px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.stat small{display:block;color:var(--muted)}
+.stat b{font-size:24px}
+.stat span{color:var(--muted);font-size:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:7px 12px}
+button.primary{background:var(--accent);color:var(--accent-t);border-color:var(--accent);font-weight:600}
+button.danger{color:var(--danger);border-color:var(--danger)}
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:900px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);padding:6px;vertical-align:top;text-align:left}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--bg)}
+.txt{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+td input,td textarea,td select{min-width:0}
+.act{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;align-items:center}
+.ib{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:28px;height:28px;padding:0 6px}
+.ib .bd{font-size:11px;font-weight:700}
+td select{padding:4px 2px 4px 5px;font-size:13px}
+td input{padding:5px 7px}
+select.s-Passed{color:var(--s-passed);font-weight:600}
+select.s-Failed{color:var(--s-failed);font-weight:600}
+select.s-In-Progress{color:var(--s-prog);font-weight:600}
+select.s-Blocked{color:var(--s-blocked);font-weight:600}
+select.s-Yet{color:var(--s-yet);font-weight:600}
+select.s-Closed{color:var(--accent);font-weight:600}
+select:disabled{opacity:.75;cursor:not-allowed}
+tr.editing{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.msg{color:var(--muted);font-size:13px;margin-top:8px;min-height:18px}
+.fallback{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.fallback textarea{margin:6px 0;font-family:ui-monospace,monospace;font-size:12px}
+.fallback button{margin-bottom:12px}
+.opt{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px}
+.thumb{width:150px;display:flex;flex-direction:column;gap:4px}
+.thumb img{width:150px;height:100px;object-fit:cover;border:1px solid var(--line);border-radius:6px;cursor:zoom-in;background:#fff}
+.cap{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ver{font-size:12px;font-weight:600;padding:2px 9px;margin-left:8px;border-radius:999px;color:var(--accent);border-color:var(--accent);vertical-align:middle}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tab{border:none;border-bottom:3px solid transparent;border-radius:0;background:none;padding:9px 16px;font-weight:600;color:var(--muted)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px;z-index:50}
+.mbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;width:min(560px,100%);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.mbox h3{margin:0 0 4px;font-size:17px}
+.flab{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.mrow{display:flex;gap:10px}.mrow .flab{flex:1}
+.merr{color:var(--danger);font-size:13px;min-height:16px}
+.sev{font-weight:600}
+.sev-Critical{color:var(--s-failed)}.sev-High{color:var(--s-prog)}.sev-Medium{color:var(--s-blocked)}.sev-Low{color:var(--s-yet)}
+.linked{font-size:12px;color:var(--muted)}
+/* ===== top-level tabs ===== */
+.apptabs{display:flex;gap:6px;align-items:center;border-bottom:2px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.atab{border:none;border-bottom:3px solid transparent;border-radius:0;background:none;padding:10px 16px;font-size:16px;font-weight:700;color:var(--muted);margin-bottom:-2px}
+.atab.on{color:var(--accent);border-bottom-color:var(--accent)}
+/* ===== Env downtime log (all rules scoped to #envApp) ===== */
+#envApp{--bg:#eef2f5;--surface:#fff;--ink:#14212b;--mute:#5b6b78;--line:#d5dde3;--accent:#0b6e8a;--accent-ink:#fff;--bad:#b42318;--warn:#b54708;--ok:#067647;
+  background:var(--bg);color:var(--ink);border-radius:10px;padding:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #envApp{--bg:#0e161c;--surface:#16212a;--ink:#e6edf2;--mute:#93a4b1;--line:#2a3945;--accent:#4cc2e0;--accent-ink:#06222b;--bad:#f97066;--warn:#fdb022;--ok:#47cd89}}
+:root[data-theme="dark"] #envApp{--bg:#0e161c;--surface:#16212a;--ink:#e6edf2;--mute:#93a4b1;--line:#2a3945;--accent:#4cc2e0;--accent-ink:#06222b;--bad:#f97066;--warn:#fdb022;--ok:#47cd89}
+#envApp .e-main{max-width:760px;margin:0 auto}
+#envApp .e-h1{font-size:1.4rem;margin:8px 0 2px}
+#envApp h2{font-size:1.05rem;margin:0 0 12px}
+#envApp .e-sub{color:var(--mute);margin:0 0 16px}
+#envApp .e-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+#envApp .e-stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px}
+#envApp .e-stat b{display:block;font-size:1.35rem}
+#envApp .e-stat span{color:var(--mute);font-size:.8rem}
+#envApp section{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px}
+#envApp .e-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#envApp .e-full{grid-column:1/-1}
+#envApp label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:3px}
+#envApp input,#envApp select,#envApp textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:9px}
+#envApp textarea{min-height:64px;resize:vertical}
+#envApp :focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+#envApp button{font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;cursor:pointer}
+#envApp button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+#envApp .e-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#envApp .e-dur{color:var(--mute);font-size:.9rem;align-self:center}
+#envApp .e-entry{border-top:1px solid var(--line);padding:12px 0}
+#envApp .e-entry:first-child{border-top:0}
+#envApp .e-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+#envApp .e-top strong{font-size:1rem}
+#envApp .e-d{font-weight:700;white-space:nowrap}
+#envApp .e-meta{color:var(--mute);font-size:.85rem;margin:2px 0}
+#envApp .e-tag{display:inline-block;border:1px solid currentColor;border-radius:999px;padding:0 8px;font-size:.78rem;margin-right:6px}
+#envApp .e-Critical{color:var(--bad)}#envApp .e-Major{color:var(--warn)}#envApp .e-Minor{color:var(--ok)}
+#envApp .e-empty{color:var(--mute);padding:8px 0}
+#envApp .e-acts{margin-top:6px;display:flex;gap:8px}
+#envApp .e-acts button{padding:4px 10px;font-size:.85rem}
+#envApp .e-filters{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+#envApp .e-filters select,#envApp .e-filters input{flex:1;min-width:130px;width:auto}
+@media (max-width:480px){#envApp .e-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="apptabs" role="tablist">
+    <button class="atab on" id="appTcm" role="tab">Test Case Manager</button>
+    <button class="atab" id="appEnv" role="tab">Env downtime log</button>
+    <button class="ver" id="ver" title="Version history"></button>
+  </div>
+  <div id="tcmApp">
+  <div class="project">
+    <label for="pn">Project Name</label>
+    <input id="pn" placeholder="Enter project name">
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab on" id="tabTc" role="tab">Test Cases</button>
+    <button class="tab" id="tabDef" role="tab">Defects</button>
+  </div>
+  <section id="tab-tc">
+  <div class="stats" id="stats"></div>
+  <div class="bar">
+    <button class="primary" id="add">+ Add test case</button>
+    <button id="upload">Upload Excel</button>
+    <input type="file" id="file" accept=".xlsx,.xlsm,.xls" style="display:none">
+    <button id="export">Download Excel (.xlsx)</button>
+    <button id="clear" class="danger">Delete all</button>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <colgroup><col style="width:6%"><col style="width:12%"><col style="width:16%"><col style="width:13%"><col style="width:14%"><col style="width:8%"><col style="width:11%"><col style="width:10%"><col style="width:10%"></colgroup>
+      <thead><tr><th>TestCase ID</th><th>TestCase Name</th><th>Given</th><th>When</th><th>Then</th><th>Platform</th><th>Status</th><th>Tested By</th><th>Actions</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  </section>
+  <section id="tab-def" style="display:none">
+  <div class="stats" id="dstats"></div>
+  <div class="tablewrap">
+    <table>
+      <colgroup><col style="width:6%"><col style="width:10%"><col style="width:7%"><col style="width:11%"><col style="width:16%"><col style="width:6%"><col style="width:11%"><col style="width:9%"><col style="width:7%"><col style="width:9%"><col style="width:8%"></colgroup>
+      <thead><tr><th>Defect ID</th><th>TestCase</th><th>Platform</th><th>Title</th><th>Description</th><th>Severity</th><th>Status</th><th>Assigned To</th><th>Created</th><th>Closing Comment</th><th>Actions</th></tr></thead>
+      <tbody id="drows"></tbody>
+    </table>
+  </div>
+  </section>
+  <div class="msg" id="msg"></div>
+  <div id="modal" class="modal" style="display:none"></div>
+  <div id="fallback" class="fallback" style="display:none"></div>
+  </div>
+
+  <div id="envApp" hidden>
+  <div class="e-main">
+  <h2 class="e-h1">Environment downtime log</h2>
+  <p class="e-sub">Record every outage in QA, staging and other test environments.</p>
+
+  <div class="e-stats">
+    <div class="e-stat"><b id="dl_sCount">0</b><span>Outages</span></div>
+    <div class="e-stat"><b id="dl_sTotal">0h</b><span>Total downtime</span></div>
+    <div class="e-stat"><b id="dl_sWorst">–</b><span>Most affected</span></div>
+  </div>
+
+  <section>
+    <h2 id="dl_formTitle">Log an outage</h2>
+    <div class="e-grid">
+      <div><label for="dl_env">Environment</label>
+        <input id="dl_env" list="dl_envs" placeholder="e.g. QA-2"><datalist id="dl_envs"></datalist></div>
+      <div><label for="dl_cat">Cause category</label>
+        <select id="dl_cat"><option>Deployment</option><option>Infrastructure</option><option>Database</option><option>Network</option><option>Test data</option><option>Third-party service</option><option>Config change</option><option>Planned maintenance</option><option>Unknown</option></select></div>
+      <div><label for="dl_start">Start</label><input id="dl_start" type="datetime-local"></div>
+      <div><label for="dl_end">End</label><input id="dl_end" type="datetime-local"></div>
+      <div><label for="dl_sev">Severity</label>
+        <select id="dl_sev"><option>Critical</option><option selected>Major</option><option>Minor</option></select></div>
+      <div><label for="dl_ticket">Ticket ID</label><input id="dl_ticket" placeholder="e.g. JIRA-1234"></div>
+      <div class="e-full"><label for="dl_impact">Testing impact</label><input id="dl_impact" placeholder="What testing was blocked?"></div>
+      <div class="e-full"><label for="dl_affected">Affected person/team</label><input id="dl_affected" placeholder="e.g. Payments QA team, Sam Lee"></div>
+      <div class="e-full"><label for="dl_notes">Root cause / notes</label><textarea id="dl_notes"></textarea></div>
+    </div>
+    <div class="e-row" style="margin-top:12px">
+      <button class="primary" id="dl_save">Save outage</button>
+      <button id="dl_cancel" hidden>Cancel edit</button>
+      <span class="e-dur" id="dl_dur"></span>
+    </div>
+    <div id="dl_err" class="e-meta" style="color:var(--bad)" role="alert"></div>
+  </section>
+
+  <section>
+    <div class="e-top"><h2>History</h2><button id="dl_export">Export to Excel</button></div>
+    <div class="e-filters">
+      <select id="dl_fEnv"><option value="">All environments</option></select>
+      <select id="dl_fSev"><option value="">All severities</option><option>Critical</option><option>Major</option><option>Minor</option></select>
+      <input id="dl_fQ" type="search" placeholder="Search notes, ticket or team">
+    </div>
+    <div id="dl_list"></div>
+  </section>
+  </div>
+  </div>
+</div>
+
+<script>
+// Bump APP_VERSION and add a CHANGELOG line with every iteration
+const APP_VERSION="1.5.2";
+const CHANGELOG=[
+  ["1.5.2","2026-10-29","Delete all now also clears the project name."],
+  ["1.5.1","2026-10-29","Env downtime log: new \"Affected person/team\" field (form, history, search and Excel export)."],
+  ["1.5.0","2026-10-29","New top-level tab \"Env downtime log\" (outage log with history, filters, stats and Excel export) next to Test Case Manager. Both apps keep all their features and store their data separately."],
+  ["1.4.1","2026-10-29","Defect stat \"Awaiting Retest\" renamed to \"Awaiting retest/Fixed\" in the app and in the Excel Stats sheets."],
+  ["1.4.0","2026-10-29","Upload Excel offers two options: import as is, or import and reset (clear defects, set all test cases to Yet To Be Tested). Combined Defects sheet now has Status/Severity dropdowns and images. Security hardening: stricter upload checks, safer Excel reader, saved-data validation, content security policy."],
+  ["1.3.0","2026-10-29","Icon buttons in the Actions column; narrower ID, Platform and Status columns; Excel gets a combined Defects sheet (all platforms)."],
+  ["1.2.0","2026-10-29","Platform dropdown (Android, iOS, Desktop) on every test case. Excel now has a Defects sheet and a Stats sheet per platform plus a combined Stats sheet."],
+  ["1.1.0","2026-10-29","Image attachments (up to 5 per test case or defect) viewable via the Open button; images are included in the Excel download next to each test case and defect, and are read back on Excel upload."],
+  ["1.0.0","2026-10-29","First versioned release: test cases and defects (separate tabs), Excel download with dropdowns and live stats, Excel upload, defect-to-test-case status sync with closing comments, Tested By and Assigned To fields."]
+];
+const PLATFORMS=["Android","iOS","Desktop"];
+const DEFAULT_PLATFORM="Desktop";
+const STATUSES=["Passed","Failed","In-Progress","Blocked","Yet To Be Tested","Closed"];
+const EXECUTED=["Passed","Failed","Blocked","Closed"];
+const DEFAULT="Yet To Be Tested";
+const KEY="tcm-v1";
+let state={project:"",cases:[]};
+let editing=null;   // index of row being edited
+let draft=null;     // copy of that row while editing
+let isNew=false;
+
+try{const s=localStorage.getItem(KEY);if(s){const p=JSON.parse(s);if(p&&Array.isArray(p.cases))state=p}}catch(e){}
+state.defects=Array.isArray(state.defects)?state.defects:[];
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));return true}catch(e){return false}}
+const $=id=>document.getElementById(id);
+const cls=s=>"s-"+(s==="Yet To Be Tested"?"Yet":s);
+const say=t=>{$("msg").textContent=t};
+
+function nextId(){
+  let n=state.cases.length+1,id;
+  do{id="TC-"+String(n++).padStart(3,"0")}while(state.cases.some(c=>c.id===id));
+  return id;
+}
+function newCase(){return{id:nextId(),name:"",given:"",when:"",then:"",status:DEFAULT,platform:DEFAULT_PLATFORM}}
+
+function casesFor(p){return p?state.cases.filter(c=>(c.platform||DEFAULT_PLATFORM)===p):state.cases}
+function defsForPlat(p){if(!p)return state.defects;const ids=new Set(casesFor(p).map(c=>c.id));return state.defects.filter(d=>ids.has(d.tcId))}
+function calc(p){
+  const cs=casesFor(p);
+  const total=cs.length;
+  const executed=cs.filter(c=>EXECUTED.includes(c.status)).length;
+  const remaining=total-executed;
+  return{total,executed,remaining,pe:total?executed/total:0,pr:total?remaining/total:0};
+}
+const pct=n=>(n*100).toFixed(1)+"%";
+
+function fillStats(box,items){
+  box.textContent="";
+  items.forEach(i=>{const d=mk("div",{className:"stat"});
+    d.appendChild(mk("small",{textContent:String(i[0])}));d.appendChild(mk("b",{textContent:String(i[1])}));
+    d.appendChild(mk("br"));d.appendChild(mk("span",{textContent:String(i[2])}));box.appendChild(d)});
+}
+function renderStats(){
+  const s=calc();
+  const items=[
+    ["Total Executed",s.executed,"Passed + Failed + Blocked + Closed"],
+    ["Total Remaining",s.remaining,"In-Progress + Yet To Be Tested"],
+    ["Percentage Executed",pct(s.pe),"of "+s.total+" total test cases"],
+    ["Percentage Remaining",pct(s.pr),"of "+s.total+" total test cases"]];
+  fillStats($("stats"),items);
+}
+
+function mk(tag,props,kids){const e=document.createElement(tag);Object.assign(e,props||{});(kids||[]).forEach(k=>e.appendChild(k));return e}
+const ICONS={
+  open:'<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>',
+  trash:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>',
+  bug:'<path d="M9 7h6a3 3 0 013 3v4a6 6 0 01-12 0v-4a3 3 0 013-3z"/><path d="M8 2l2 2M16 2l-2 2M3 13h3M18 13h3M4 7l2.5 2M20 7l-2.5 2M5.5 20L8 18M18.5 20L16 18M12 8v12"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  x:'<path d="M18 6L6 18M6 6l12 12"/>'};
+function ibtn(icon,label,fn,c,badge){   // icon-only button with a tooltip
+  const b=mk("button",{className:"ib"+(c?" "+c:"")});
+  b.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[icon]+'</svg>'+(badge?'<span class="bd">'+(Number(badge)||0)+'</span>':"");
+  b.title=label;b.setAttribute("aria-label",label);b.addEventListener("click",fn);return b;
+}
+function btn(label,fn,c){const b=mk("button",{textContent:label});if(c)b.className=c;b.addEventListener("click",fn);return b}
+
+function personInput(obj,key,placeholder){
+  const e=mk("input",{value:obj[key]||"",placeholder});
+  e.setAttribute("aria-label",key);
+  e.addEventListener("input",()=>{obj[key]=e.value;save()});
+  return e;
+}
+function platSel(obj,onchange){
+  const sel=mk("select");
+  PLATFORMS.forEach(p=>sel.appendChild(mk("option",{value:p,textContent:p})));
+  sel.value=PLATFORMS.includes(obj.platform)?obj.platform:DEFAULT_PLATFORM;
+  sel.setAttribute("aria-label","platform");
+  sel.addEventListener("change",()=>onchange(sel.value));
+  return sel;
+}
+function statusSel(c,onchange){
+  const sel=mk("select");
+  STATUSES.forEach(s=>sel.appendChild(mk("option",{value:s,textContent:s})));
+  sel.value=c.status;sel.className=cls(c.status);
+  sel.addEventListener("change",()=>{sel.className=cls(sel.value);onchange(sel.value)});
+  return sel;
+}
+
+function renderRows(){
+  const tb=$("rows");tb.innerHTML="";
+  state.cases.forEach((c,i)=>{
+    const tr=document.createElement("tr");
+    const td=(cn,el)=>{const t=mk("td",{className:cn||""});t.appendChild(el);tr.appendChild(t)};
+    if(editing===i){
+      tr.className="editing";
+      const f=(k,tag)=>{const e=mk(tag||"textarea",{value:draft[k]});e.setAttribute("aria-label",k);e.addEventListener("input",()=>{draft[k]=e.value});return e};
+      td("id",f("id","input"));td("name",f("name"));td("",f("given"));td("",f("when"));td("",f("then"));
+      td("",platSel(draft,v=>{draft.platform=v}));
+      const dSel=statusSel(draft,v=>{draft.status=v});
+      if(defsFor(c.id).length){dSel.disabled=true;dSel.title="Status is controlled by the linked defect(s)."}
+      td("st",dSel);td("who",personInput(draft,"testedBy","Tester name"));
+      td("act",mk("div",{className:"act"},[ibtn("check","Save",saveEdit,"primary"),ibtn("x","Cancel",cancelEdit)]));
+    }else{
+      const t=v=>mk("div",{className:"txt",textContent:v||"—"});
+      td("id",t(c.id));td("name",t(c.name));td("",t(c.given));td("",t(c.when));td("",t(c.then));
+      td("",platSel(c,v=>{c.platform=v;save();render()}));
+      const sSel=statusSel(c,v=>{c.status=v;save();render()});
+      const lk=defsFor(c.id);
+      if(lk.length){sSel.disabled=true;sSel.title="Status is controlled by linked defect(s): "+lk.map(d=>d.id+" ("+d.status+")").join(", ")+". Change the defect status to update it."}
+      td("st",sSel);td("who",personInput(c,"testedBy","Tester name"));
+      const linkedDefs=state.defects.filter(d=>d.tcId===c.id).map(d=>d.id+" ("+d.status+")");
+      const acts=[ibtn("open","Open (details & attachments)",()=>openAttachments("case",c),"",c.images&&c.images.length?c.images.length:""),ibtn("edit","Edit",()=>startEdit(i)),ibtn("trash","Delete",()=>del(i),"danger")];
+      if(c.status==="Failed")acts.unshift(ibtn("bug","Create Defect",()=>openDefect(c),"primary"));
+      if(linkedDefs.length)acts.push(mk("div",{className:"linked",textContent:"Defects: "+linkedDefs.join(", ")}));
+      td("act",mk("div",{className:"act"},acts));
+    }
+    tb.appendChild(tr);
+  });
+  if(!state.cases.length)tb.innerHTML='<tr><td colspan="9" style="color:var(--muted)">No test cases yet. Click “Add test case”.</td></tr>';
+}
+function render(){renderRows();renderStats();renderDefects();updateTabs()}
+
+function startEdit(i){
+  if(editing!==null&&!confirm("Discard unsaved changes to the row being edited?"))return;
+  if(isNew&&editing!==null)state.cases.splice(editing,1);
+  if(isNew&&editing!==null&&editing<i)i--;
+  editing=i;isNew=false;draft={...state.cases[i]};render();
+}
+function saveEdit(){
+  const id=(draft.id||"").trim();
+  if(!id){say("TestCase ID is required.");return}
+  if(state.cases.some((c,j)=>j!==editing&&c.id===id)){say("TestCase ID “"+id+"” already exists.");return}
+  const oldId=state.cases[editing].id;if(oldId!==id)state.defects.forEach(d=>{if(d.tcId===oldId)d.tcId=id});
+  draft.id=id;{const g=governing(id);if(g)draft.status=DEF_MAP[g]}
+  state.cases[editing]=draft;
+  editing=null;draft=null;isNew=false;save();say("Test case saved.");render();
+}
+function cancelEdit(){
+  if(isNew)state.cases.splice(editing,1);
+  editing=null;draft=null;isNew=false;say("");render();
+}
+function del(i){
+  const c=state.cases[i];
+  const linked=state.defects.filter(d=>d.tcId===c.id).length;
+  if(!confirm("Delete test case "+c.id+(c.name?" – "+c.name:"")+"?"+(linked?"\n\nThis will also delete "+linked+" linked defect(s).":"")))return;
+  state.defects=state.defects.filter(d=>d.tcId!==c.id);
+  state.cases.splice(i,1);
+  if(editing!==null){if(editing===i){editing=null;draft=null;isNew=false}else if(editing>i)editing--}
+  save();say("Test case deleted.");render();
+}
+
+$("add").addEventListener("click",()=>{
+  if(editing!==null){say("Save or cancel the row you are editing first.");return}
+  state.cases.push(newCase());editing=state.cases.length-1;draft={...state.cases[editing]};isNew=true;render();
+});
+function confirmBox(title,message,okLabel,onOk){
+  const m=$("modal");m.innerHTML="";
+  const close=()=>{m.style.display="none";m.innerHTML=""};
+  m.appendChild(mk("div",{className:"mbox",role:"alertdialog"},[
+    mk("h3",{textContent:title}),
+    mk("p",{textContent:message,style:"margin:0;line-height:1.5"}),
+    mk("div",{className:"bar"},[btn(okLabel,()=>{close();onOk()},"danger"),btn("Cancel",close)])]));
+  m.style.display="flex";
+}
+$("clear").addEventListener("click",()=>{
+  const nc=state.cases.length,nd=state.defects.length;
+  if(!nc&&!nd){say("There is nothing to delete.");return}
+  confirmBox("Delete all test cases?",
+    "Are you sure you want to delete all? All "+nc+" test case(s) will be deleted"+(nd?", along with all "+nd+" linked defect(s)":"")+". This cannot be undone.",
+    "Yes, delete all",
+    ()=>{state.cases=[];state.defects=[];state.project="";$("pn").value="";editing=null;draft=null;isNew=false;save();say("All test cases, defects and the project name were cleared.");render()});
+});
+$("pn").value=state.project;
+$("pn").addEventListener("input",e=>{state.project=e.target.value;save()});
+
+let tab=state.tab==="def"?"def":"tc";
+function updateTabs(){
+  $("tab-tc").style.display=tab==="tc"?"":"none";
+  $("tab-def").style.display=tab==="def"?"":"none";
+  $("tabTc").className="tab"+(tab==="tc"?" on":"");
+  $("tabDef").className="tab"+(tab==="def"?" on":"");
+  $("tabTc").textContent="Test Cases ("+state.cases.length+")";
+  $("tabDef").textContent="Defects ("+state.defects.length+")";
+}
+function showTab(t){tab=t;state.tab=t;save();updateTabs()}
+$("tabTc").addEventListener("click",()=>showTab("tc"));
+$("tabDef").addEventListener("click",()=>showTab("def"));
+const D_STATUS=["Open","In Progress","Yet To Be Tested","Ready To Test","Fixed","Closed"];
+const SEV=["Critical","High","Medium","Low"];
+const DEF_MAP={"Fixed":"Passed","Open":"Failed","Ready To Test":"Failed","In Progress":"In-Progress","Yet To Be Tested":"Yet To Be Tested","Closed":"Closed"};
+// If a test case has several defects, the least-resolved one decides its status
+const D_PRIORITY=["Open","Ready To Test","In Progress","Yet To Be Tested","Fixed","Closed"];
+function defsFor(tcId){return state.defects.filter(d=>d.tcId===tcId)}
+function governing(tcId){const ds=defsFor(tcId);for(const st of D_PRIORITY)if(ds.some(d=>d.status===st))return st;return null}
+function syncCase(tcId){
+  const g=governing(tcId),c=state.cases.find(x=>x.id===tcId);
+  if(g&&c)c.status=DEF_MAP[g];
+}
+function closeDefectBox(d){
+  const m=$("modal");m.innerHTML="";
+  const close=()=>{m.style.display="none";m.innerHTML=""};
+  const ta=mk("textarea",{value:d.comment||"",placeholder:"Optional: how was this defect resolved, or why is it being closed?"});ta.style.minHeight="110px";
+  m.appendChild(mk("div",{className:"mbox"},[
+    mk("h3",{textContent:"Close defect "+d.id}),
+    mk("p",{textContent:"Linked test case "+d.tcId+" will be set to Closed.",style:"margin:0"}),
+    mk("label",{className:"flab"},[mk("span",{textContent:"Closing comment"}),ta]),
+    mk("div",{className:"bar"},[
+      btn("Close defect",()=>{d.status="Closed";d.comment=ta.value;syncCase(d.tcId);save();close();say("Defect "+d.id+" closed.");render()},"primary"),
+      btn("Cancel",()=>{close();render()})])]));
+  m.style.display="flex";
+}
+function dcalc(p){
+  const d=defsForPlat(p),n=a=>d.filter(x=>a.includes(x.status)).length;
+  const total=d.length,open=n(["Open","In Progress"]),retest=n(["Yet To Be Tested","Ready To Test","Fixed"]),closed=n(["Closed"]);
+  const sev={};SEV.forEach(v=>{sev[v]=d.filter(x=>x.severity===v).length});
+  const noDef=casesFor(p).filter(c=>c.status==="Failed"&&!d.some(x=>x.tcId===c.id)).length;
+  return{total,open,retest,closed,sev,noDef,pc:total?closed/total:0};
+}
+function nextDefId(){
+  let n=state.defects.length+1,id;
+  do{id="DEF-"+String(n++).padStart(3,"0")}while(state.defects.some(d=>d.id===id));
+  return id;
+}
+function renderDefects(){
+  const s=dcalc();
+  const items=[
+    ["Total Defects",s.total,"All logged defects"],
+    ["Open Defects",s.open,"Open + In Progress"],
+    ["Awaiting retest/Fixed",s.retest,"Yet To Be Tested + Ready To Test + Fixed"],
+    ["Closed Defects",s.closed,"Closed ("+pct(s.pc)+" of total)"],
+    ["By Severity",s.sev.Critical+" / "+s.sev.High+" / "+s.sev.Medium+" / "+s.sev.Low,"Critical / High / Medium / Low"],
+    ["Failed Without Defect",s.noDef,"Failed test cases with no defect logged"]];
+  fillStats($("dstats"),items);
+  const tb=$("drows");tb.innerHTML="";
+  state.defects.forEach((d,i)=>{
+    const tr=document.createElement("tr");
+    const td=(cn,el)=>{const t=mk("td",{className:cn||""});t.appendChild(el);tr.appendChild(t)};
+    const t=v=>mk("div",{className:"txt",textContent:v||"—"});
+    const tc=state.cases.find(c=>c.id===d.tcId);
+    td("",t(d.id));td("",t(d.tcId+(tc&&tc.name?" – "+tc.name:"")));td("",t(tc?tc.platform:""));td("",t(d.title));td("",t(d.description));
+    td("",mk("div",{className:"sev sev-"+d.severity,textContent:d.severity}));
+    const sel=mk("select");D_STATUS.forEach(x=>sel.appendChild(mk("option",{value:x,textContent:x})));
+    sel.value=d.status;sel.addEventListener("change",()=>{
+      if(sel.value==="Closed"){sel.value=d.status;closeDefectBox(d);return}
+      d.status=sel.value;syncCase(d.tcId);save();render();});
+    td("",sel);td("who",personInput(d,"assignee","Assigned to"));td("",t(d.created));td("",t(d.comment));
+    td("",mk("div",{className:"act"},[ibtn("open","Open (details & attachments)",()=>openAttachments("defect",d),"",d.images&&d.images.length?d.images.length:""),ibtn("edit","Edit",()=>openDefect(null,d)),ibtn("trash","Delete",()=>{
+      if(!confirm("Delete defect "+d.id+"?"))return;
+      state.defects.splice(i,1);syncCase(d.tcId);save();say("Defect deleted.");render();},"danger")]));
+    tb.appendChild(tr);
+  });
+  if(!state.defects.length)tb.innerHTML='<tr><td colspan="11" style="color:var(--muted)">No defects yet. Mark a test case as Failed, then click “Create Defect”.</td></tr>';
+}
+function openDefect(tc,existing){
+  const d=existing?{...existing}:{
+    id:nextDefId(),tcId:tc.id,
+    title:tc.id+" – "+(tc.name||"Failed test case"),
+    description:"Given: "+tc.given+"\nWhen: "+tc.when+"\nExpected (Then): "+tc.then+"\n\nActual result: ",
+    severity:"Medium",status:"Open",created:new Date().toISOString().slice(0,10)};
+  d.comment=d.comment||"";d.assignee=d.assignee||"";
+  const m=$("modal");m.innerHTML="";
+  const box=mk("div",{className:"mbox"});
+  const lab=(t,el)=>{const l=mk("label",{className:"flab"});l.appendChild(mk("span",{textContent:t}));l.appendChild(el);return l};
+  const inp=(k,tag)=>{const e=mk(tag||"input",{value:d[k]});e.addEventListener("input",()=>{d[k]=e.value});return e};
+  const pick=(k,opts)=>{const e=mk("select");opts.forEach(o=>e.appendChild(mk("option",{value:o,textContent:o})));e.value=d[k];e.addEventListener("change",()=>{d[k]=e.value});return e};
+  const err=mk("div",{className:"merr"});
+  const close=()=>{m.style.display="none";m.innerHTML=""};
+  const desc=inp("description","textarea");desc.style.minHeight="150px";
+  box.appendChild(mk("h3",{textContent:(existing?"Edit defect ":"Create defect ")+d.id+" for "+d.tcId}));
+  box.appendChild(lab("Title",inp("title")));
+  box.appendChild(lab("Description / steps to reproduce",desc));
+  const cwrap=lab("Closing comment",inp("comment","textarea"));cwrap.querySelector("textarea").style.minHeight="70px";
+  const stSel=pick("status",D_STATUS);
+  const toggle=()=>{cwrap.style.display=d.status==="Closed"?"flex":"none"};
+  stSel.addEventListener("change",toggle);
+  box.appendChild(mk("div",{className:"mrow"},[lab("Severity",pick("severity",SEV)),lab("Status",stSel)]));
+  box.appendChild(lab("Assigned To",inp("assignee")));
+  box.appendChild(cwrap);toggle();
+  box.appendChild(err);
+  box.appendChild(mk("div",{className:"bar"},[
+    btn(existing?"Save changes":"Create defect",()=>{
+      if(!d.title.trim()){err.textContent="Title is required.";return}
+      if(existing){const i=state.defects.findIndex(x=>x.id===existing.id);state.defects[i]=d}
+      else state.defects.push(d);
+      syncCase(d.tcId);save();close();say("Defect "+d.id+" saved."+(tab==="tc"?" You can view it in the Defects tab.":""));render();},"primary"),
+    btn("Cancel",close)]));
+  m.appendChild(box);m.style.display="flex";
+}
+
+async function getDownloads(){
+  try{return (window.claude&&claude.use)?await claude.use("downloads"):null}catch(e){return null}
+}
+function tsv(rows){return rows.map(r=>r.map(v=>String(v).replace(/[\t\r\n]+/g," ")).join("\t")).join("\n")}
+function showFallback(){
+  const s=calc();
+  const cases=tsv([["Project Name",state.project],["TestCase ID","TestCase Name","Given","When","Then","TestCase Status"],...state.cases.map(c=>[c.id,c.name,c.given,c.when,c.then,c.status])]);
+  const stats=tsv([["Project Name",state.project],["Metric","Value"],["Total Executed",s.executed],["Total Remaining",s.remaining],["Percentage Executed",pct(s.pe)],["Percentage Remaining",pct(s.pr)]]);
+  const ds=dcalc();
+  const defs=tsv([["Project Name",state.project],["Defect Metric","Value"],["Total Defects",ds.total],["Open Defects",ds.open],["Awaiting retest/Fixed",ds.retest],["Closed Defects",ds.closed],["Critical",ds.sev.Critical],["High",ds.sev.High],["Medium",ds.sev.Medium],["Low",ds.sev.Low],["Failed Without Defect",ds.noDef],["Percentage Closed",pct(ds.pc)],[],["Defect ID","TestCase ID","Title","Description","Severity","Status","Created"],...state.defects.map(d=>[d.id,d.tcId,d.title,d.description,d.severity,d.status,d.created])]);
+  const box=$("fallback");
+  box.innerHTML="";
+  box.appendChild(mk("p",{textContent:"Downloads are blocked in this view, so copy the data instead. Paste each block into Excel (Test Cases into Sheet1, Stats into a second sheet)."}));
+  [["Test Cases",cases],["Stats",stats],["Defects",defs]].forEach(([t,v])=>{
+    const ta=mk("textarea",{value:v,readOnly:true});ta.style.minHeight="140px";
+    box.appendChild(mk("strong",{textContent:t}));box.appendChild(ta);
+    box.appendChild(btn("Copy "+t,async()=>{try{await navigator.clipboard.writeText(v);say(t+" copied.")}catch(e){ta.select();say("Press Ctrl/Cmd+C to copy.")}}));
+  });
+  box.style.display="block";
+}
+
+// ---------- Limits & input checks ----------
+const LIM={file:15*1048576,rows:10000,cases:5000,defects:5000,text:5000,zipTotal:150*1048576,zipEntry:60*1048576,zipEntries:2000};
+const cleanText=(v,max)=>{const t=typeof v==="string"?v:(typeof v==="number"&&isFinite(v)?String(v):"");return t.slice(0,max||LIM.text)};
+const IMG_RE=/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
+const todayISO=()=>new Date().toISOString().slice(0,10);
+function cleanImages(a){
+  return (Array.isArray(a)?a:[]).slice(0,MAX_IMAGES)
+    .filter(i=>i&&typeof i.data==="string"&&i.data.length<2.5e6&&IMG_RE.test(i.data))
+    .map(i=>({name:cleanText(i.name,120)||"image.jpg",data:i.data,w:Math.min(Math.max(+i.w||0,0),4000),h:Math.min(Math.max(+i.h||0,0),4000)}));
+}
+function sanitizeState(){   // saved data is re-validated on load: types, lengths, allowed values, image format
+  const arr=x=>Array.isArray(x)?x:[];
+  state.project=cleanText(state.project,200);
+  state.tab=state.tab==="def"?"def":"tc";
+  state.cases=arr(state.cases).slice(0,LIM.cases).filter(c=>c&&typeof c==="object").map(c=>({
+    id:cleanText(c.id,50).trim(),name:cleanText(c.name),given:cleanText(c.given),when:cleanText(c.when),then:cleanText(c.then),
+    status:STATUSES.includes(c.status)?c.status:DEFAULT,testedBy:cleanText(c.testedBy,100),
+    platform:PLATFORMS.includes(c.platform)?c.platform:DEFAULT_PLATFORM,images:cleanImages(c.images)})).filter(c=>c.id);
+  state.defects=arr(state.defects).slice(0,LIM.defects).filter(d=>d&&typeof d==="object").map(d=>({
+    id:cleanText(d.id,50).trim(),tcId:cleanText(d.tcId,50).trim(),title:cleanText(d.title,300),description:cleanText(d.description),
+    severity:SEV.includes(d.severity)?d.severity:"Medium",status:D_STATUS.includes(d.status)?d.status:"Closed",
+    assignee:cleanText(d.assignee,100),created:/^\d{4}-\d{2}-\d{2}$/.test(d.created)?d.created:todayISO(),
+    comment:cleanText(d.comment),images:cleanImages(d.images)})).filter(d=>d.id);
+}
+function zipSafe(buf){   // reject files that are not zips, or that would expand to an unreasonable size
+  const bad=m=>{throw new Error(m)};
+  const n=buf.byteLength;if(n<22)bad("This is not a valid .xlsx file.");
+  const dv=new DataView(buf);
+  if(dv.getUint32(0,true)!==0x04034b50)bad("This is not a valid .xlsx file.");
+  let e=-1;for(let i=n-22;i>=Math.max(0,n-65557);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}
+  if(e<0)bad("This is not a valid .xlsx file.");
+  const count=dv.getUint16(e+10,true);let off=dv.getUint32(e+16,true);
+  if(count>LIM.zipEntries)bad("The file contains too many internal parts.");
+  let total=0;
+  for(let k=0;k<count;k++){
+    if(off+46>n||dv.getUint32(off,true)!==0x02014b50)bad("The file structure is damaged.");
+    const size=dv.getUint32(off+24,true);
+    if(size>LIM.zipEntry)bad("The file contains an oversized part.");
+    total+=size;if(total>LIM.zipTotal)bad("The file would expand to an unreasonable size.");
+    off+=46+dv.getUint16(off+28,true)+dv.getUint16(off+30,true)+dv.getUint16(off+32,true);
+  }
+}
+
+// ---------- Upload Excel (same layout as the downloaded file) ----------
+function cellVal(v){
+  if(v==null)return "";
+  if(v instanceof Date)return isNaN(v)?"":v.toISOString().slice(0,10);
+  if(typeof v==="object"){
+    if("result" in v)return cellVal(v.result);
+    if(Array.isArray(v.richText))return v.richText.map(t=>t&&t.text?t.text:"").join("");
+    if("text" in v)return cellVal(v.text);
+    return "";
+  }
+  return typeof v==="string"||typeof v==="number"||typeof v==="boolean"?v:"";
+}
+function sheetRows(ws){
+  const out=[],n=Math.min(ws.rowCount||0,LIM.rows);
+  for(let r=1;r<=n;r++){
+    const vals=ws.getRow(r).values||[],row=[];
+    for(let c=1;c<vals.length&&c<=60;c++)row.push(cellVal(vals[c]));
+    if(row.some(x=>x!==""))out.push(row);
+  }
+  return out;
+}
+function importWorkbook(wb){
+  const wsT=wb.worksheets.find(w=>w.name.trim().toLowerCase()==="test cases");
+  const wsDs=wb.worksheets.filter(w=>/^defects\b/i.test(w.name.trim())&&!/combined/i.test(w.name));
+  if(!wsT)throw new Error("The “Test Cases” sheet was not found. Please upload a file downloaded from this app.");
+  const str=v=>v==null?"":String(v);
+  const txt=(v,max)=>cleanText(str(v),max);
+  const canon=(v,list)=>list.find(x=>x.toLowerCase()===str(v).trim().toLowerCase())||null;
+  const fixDate=v=>{const t=str(v).trim().slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(t)?t:""};
+  const heads=r=>r.map(h=>str(h).trim().toLowerCase());
+  const colOf=(head,name,fb)=>{const i=head.indexOf(name);return i>=0?i:fb};
+
+  const tRows=sheetRows(wsT);
+  const hi=tRows.findIndex(r=>str(r[0]).trim().toLowerCase()==="testcase id");
+  if(hi<0)throw new Error("The “TestCase ID” header row was not found on the Test Cases sheet.");
+  const th=heads(tRows[hi]);
+  const iId=colOf(th,"testcase id",0),iName=colOf(th,"testcase name",1),iGiven=colOf(th,"given",2),iWhen=colOf(th,"when",3),iThen=colOf(th,"then",4);
+  const iStat=colOf(th,"testcase status",5),iMan=colOf(th,"manual status",-1),iBy=colOf(th,"tested by",-1),iPl=colOf(th,"platform",-1);
+  let project="";
+  for(const r of tRows.slice(0,hi)){const m=str(r[0]).match(/^\s*project name\s*:?\s*(.*)$/i);if(m){project=txt(m[1],200).trim();break}}
+
+  const cases=[],seen=new Set();let dup=0,trunc=0;
+  tRows.slice(hi+1).forEach(r=>{
+    const id=txt(r[iId],50).trim();if(!id)return;
+    if(seen.has(id)){dup++;return}
+    if(cases.length>=LIM.cases){trunc++;return}
+    seen.add(id);
+    const st=canon(r[iStat],STATUSES)||(iMan>=0?canon(r[iMan],STATUSES):null)||DEFAULT;
+    cases.push({id,name:txt(r[iName]),given:txt(r[iGiven]),when:txt(r[iWhen]),then:txt(r[iThen]),status:st,
+      testedBy:iBy>=0?txt(r[iBy],100):"",platform:(iPl>=0?canon(r[iPl],PLATFORMS):null)||DEFAULT_PLATFORM,images:[]});
+  });
+
+  const defects=[];let orphan=0;const used=new Set();
+  for(const wsD of wsDs){
+    const dRows=sheetRows(wsD);
+    const dh=dRows.findIndex(r=>str(r[0]).trim().toLowerCase()==="defect id");
+    if(dh<0)continue;
+    const dhd=heads(dRows[dh]);
+    const iD=colOf(dhd,"defect id",0),iT=colOf(dhd,"testcase id",1),iTitle=colOf(dhd,"title",3),iDesc=colOf(dhd,"description",4);
+    const iSev=colOf(dhd,"severity",5),iSt=colOf(dhd,"status",6),iAs=colOf(dhd,"assigned to",-1),iCr=colOf(dhd,"created",-1),iCm=colOf(dhd,"closing comment",-1);
+    dRows.slice(dh+1).forEach(r=>{
+      const tcId=txt(r[iT],50).trim();let id=txt(r[iD],50).trim();
+      if(!id&&!tcId)return;
+      if(!seen.has(tcId)){orphan++;return}
+      if(defects.length>=LIM.defects){trunc++;return}
+      if(!id||used.has(id)){let n=defects.length+1;do{id="DEF-"+String(n++).padStart(3,"0")}while(used.has(id))}
+      used.add(id);
+      defects.push({id,tcId,title:txt(r[iTitle],300)||(tcId+" defect"),description:txt(r[iDesc]),
+        severity:canon(r[iSev],SEV)||"Medium",status:canon(r[iSt],D_STATUS)||"Open",
+        assignee:iAs>=0?txt(r[iAs],100):"",created:(iCr>=0?fixDate(r[iCr]):"")||todayISO(),comment:iCm>=0?txt(r[iCm]):"",images:[]});
+    });
+  }
+  return{project,cases,defects,dup,orphan,trunc,imgN:0};
+}
+
+$("upload").addEventListener("click",()=>$("file").click());
+$("file").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";
+  if(!f)return;
+  if(!/\.xlsx$/i.test(f.name)){say("Upload failed: please choose an .xlsx file downloaded from this app.");return}
+  if(f.size>LIM.file){say("Upload failed: the file is larger than "+(LIM.file/1048576)+" MB.");return}
+  if(!(await ensureExcelJS())){say("The Excel reader could not load (internet is needed). Reload the page and try again.");return}
+  let data;
+  try{
+    const buf=await f.arrayBuffer();zipSafe(buf);
+    const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf);
+    data=importWorkbook(wb);
+    try{data.imgN=await importImages(wb,data)}catch(err){console.error(err)}
+  }catch(err){say("Upload failed: "+(err&&err.message?err.message:"the file could not be read."));return}
+  if(!data.cases.length){say("Upload failed: no test cases were found in “"+f.name+"”.");return}
+
+  const apply=reset=>{
+    if(data.project){state.project=data.project;$("pn").value=data.project}
+    state.cases=data.cases;
+    state.defects=reset?[]:data.defects;
+    if(reset)state.cases.forEach(c=>{c.status=DEFAULT});
+    state.cases.forEach(c=>syncCase(c.id));
+    editing=null;draft=null;isNew=false;save();render();
+    say("Uploaded “"+f.name+"”: "+data.cases.length+" test case(s)"
+      +(reset?" (defects cleared, all statuses reset to Yet To Be Tested)":" and "+data.defects.length+" defect(s)")
+      +(data.imgN?", "+data.imgN+" image(s)":"")+"."
+      +(data.dup?" "+data.dup+" duplicate test case ID(s) skipped.":"")+(data.orphan?" "+data.orphan+" defect(s) skipped (no matching test case).":"")
+      +(data.trunc?" "+data.trunc+" row(s) skipped (over the size limit).":""));
+  };
+  const hasData=state.defects.length||state.cases.some(c=>c.name||c.given||c.when||c.then||c.testedBy);
+  const m=$("modal");m.innerHTML="";
+  const close=()=>{m.style.display="none";m.innerHTML=""};
+  const opt=(label,desc,fn,c)=>{const d=mk("div",{className:"opt"},[btn(label,()=>{close();fn()},c),mk("div",{className:"linked",textContent:desc})]);return d};
+  m.appendChild(mk("div",{className:"mbox"},[
+    mk("h3",{textContent:"Import “"+f.name+"”"}),
+    mk("p",{textContent:"Found "+data.cases.length+" test case(s) and "+data.defects.length+" defect(s)."+(hasData?" Importing replaces all current test cases and defects.":""),style:"margin:0;line-height:1.5"}),
+    opt("Import as is","Keep the defects and the test case statuses exactly as they are in the file.",()=>apply(false),"primary"),
+    opt("Import and reset","Clear all defects and set every test case status to Yet To Be Tested (a fresh test run).",()=>apply(true),""),
+    mk("div",{className:"bar"},[btn("Cancel",close)])]));
+  m.style.display="flex";
+});
+
+document.title="Test Case Manager v"+APP_VERSION;
+$("ver").textContent="v"+APP_VERSION;
+$("ver").addEventListener("click",()=>{
+  const m=$("modal");m.innerHTML="";
+  const close=()=>{m.style.display="none";m.innerHTML=""};
+  const items=CHANGELOG.map(c=>mk("div",{className:"txt",style:"margin-bottom:8px",textContent:"v"+c[0]+"  ("+c[1]+")\n"+c[2]}));
+  m.appendChild(mk("div",{className:"mbox"},[mk("h3",{textContent:"Version history – current: v"+APP_VERSION}),...items,mk("div",{className:"bar"},[btn("Close",close,"primary")])]));
+  m.style.display="flex";
+});
+
+// ---------- Image attachments ----------
+const MAX_IMAGES=5;
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
+async function compressDataUrl(src){   // shrink to keep browser storage small
+  const img=await loadImg(src);
+  let w=img.naturalWidth,h=img.naturalHeight;
+  const sc=Math.min(1,1000/Math.max(w,h));w=Math.max(1,Math.round(w*sc));h=Math.max(1,Math.round(h*sc));
+  const cv=document.createElement("canvas");cv.width=w;cv.height=h;
+  const ctx=cv.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+  return{data:cv.toDataURL("image/jpeg",0.72),w,h};
+}
+async function fileToImage(file){
+  const src=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});
+  return{name:file.name||"image.png",...(await compressDataUrl(src))};
+}
+function zoom(im){
+  const o=mk("div",{className:"modal"});o.style.cssText="display:flex;z-index:60;cursor:zoom-out";
+  const img=mk("img",{src:im.data,alt:im.name});img.style.cssText="max-width:95vw;max-height:92vh;border-radius:8px;background:#fff";
+  o.appendChild(img);o.addEventListener("click",()=>o.remove());document.body.appendChild(o);
+}
+function openAttachments(kind,item){
+  const isCase=kind==="case";
+  const m=$("modal");m.innerHTML="";
+  const box=mk("div",{className:"mbox"});box.style.width="min(780px,100%)";
+  box.appendChild(mk("h3",{textContent:isCase?item.id+(item.name?" – "+item.name:""):item.id+" – "+item.title}));
+  const info=isCase
+    ?["Given: "+item.given,"When: "+item.when,"Then: "+item.then,"Platform: "+(item.platform||DEFAULT_PLATFORM)+"   |   Status: "+item.status+(item.testedBy?"   |   Tested by: "+item.testedBy:"")]
+    :["Test case: "+item.tcId,"Severity: "+item.severity+"   |   Status: "+item.status+(item.assignee?"   |   Assigned to: "+item.assignee:""),"Description: "+item.description].concat(item.comment?["Closing comment: "+item.comment]:[]);
+  box.appendChild(mk("div",{className:"txt",textContent:info.join("\n")})).style.cssText="font-size:13px;color:var(--muted)";
+  box.appendChild(mk("strong",{textContent:"Attachments (images, max "+MAX_IMAGES+")"}));
+  const grid=mk("div",{className:"thumbs"});
+  const note=mk("div",{className:"merr"});
+  const file=mk("input",{type:"file",accept:"image/*",multiple:true});file.style.display="none";
+  const draw=()=>{
+    grid.innerHTML="";
+    const list=item.images||[];
+    list.forEach((im,i)=>{
+      const img=mk("img",{src:im.data,alt:im.name,title:"Click to enlarge"});
+      img.addEventListener("click",()=>zoom(im));
+      grid.appendChild(mk("div",{className:"thumb"},[img,mk("div",{className:"cap",textContent:im.name,title:im.name}),
+        btn("Remove",()=>{item.images.splice(i,1);save();draw();render()},"danger")]));
+    });
+    if(!list.length)grid.appendChild(mk("div",{className:"linked",textContent:"No images attached yet."}));
+  };
+  const add=async files=>{
+    note.textContent="";item.images=item.images||[];
+    for(const f of files){
+      if(!f.type.startsWith("image/"))continue;
+      if(item.images.length>=MAX_IMAGES){note.textContent="Maximum of "+MAX_IMAGES+" images per item.";break}
+      try{
+        item.images.push(await fileToImage(f));
+        if(!save()){item.images.pop();note.textContent="Browser storage is full. Remove some images and try again.";break}
+      }catch(e){note.textContent="Could not read “"+f.name+"”."}
+    }
+    draw();render();
+  };
+  file.addEventListener("change",()=>{const fs=[...file.files];file.value="";add(fs)});
+  const onPaste=e=>{const fs=[...((e.clipboardData&&e.clipboardData.files)||[])].filter(f=>f.type.startsWith("image/"));if(fs.length){e.preventDefault();add(fs)}};
+  const close=()=>{document.removeEventListener("paste",onPaste);m.onclick=null;m.style.display="none";m.innerHTML=""};
+  document.addEventListener("paste",onPaste);
+  m.onclick=e=>{if(e.target===m)close()};
+  box.appendChild(grid);box.appendChild(note);
+  box.appendChild(mk("div",{className:"linked",textContent:"Tip: you can also paste a screenshot (Ctrl/Cmd+V) while this window is open."}));
+  box.appendChild(mk("div",{className:"bar"},[btn("Add images",()=>file.click(),"primary"),btn("Close",close),file]));
+  m.appendChild(box);m.style.display="flex";draw();
+}
+
+async function importImages(wb,data){   // read pictures placed in rows of the Excel file
+  let n=0;
+  const OKEXT=["png","jpeg","jpg","gif","bmp"];
+  const id0=ws=>r=>{const v=ws.getRow(r).getCell(1).value;return String(cellVal(v)).trim()};
+  const b64=u=>{u=new Uint8Array(u);let s="";for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+  for(const ws of wb.worksheets){
+    const nm=ws.name.trim().toLowerCase();
+    const list=nm==="test cases"?data.cases:(/^defects\b/.test(nm)&&!/combined/.test(nm)?data.defects:null);if(!list)continue;
+    const idAt=id0(ws);
+    const ims=ws.getImages().filter(x=>x.range&&x.range.tl).sort((a,b)=>a.range.tl.nativeRow-b.range.tl.nativeRow||a.range.tl.nativeCol-b.range.tl.nativeCol);
+    for(const im of ims){
+      const item=list.find(x=>x.id===idAt(im.range.tl.nativeRow+1));if(!item)continue;
+      item.images=item.images||[];if(item.images.length>=MAX_IMAGES)continue;
+      const media=wb.getImage(im.imageId);
+      const ext=String(media&&media.extension||"").toLowerCase();
+      if(!media||!media.buffer||!OKEXT.includes(ext)||media.buffer.length>10*1048576)continue;   // only common raster formats, max 10 MB each
+      try{
+        const c=await compressDataUrl("data:image/"+ext.replace("jpg","jpeg")+";base64,"+b64(media.buffer));
+        item.images.push({name:"excel-image-"+(item.images.length+1)+".jpg",...c});n++;
+      }catch(e){}
+    }
+  }
+  return n;
+}
+
+const XLSX_MIME="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+function loadScript(src){return new Promise((res,rej)=>{const t=document.createElement("script");t.src=src;t.onload=res;t.onerror=rej;document.head.appendChild(t)})}
+async function ensureExcelJS(){
+  if(typeof ExcelJS!=="undefined")return true;
+  try{await loadScript("https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js")}catch(e){}
+  return typeof ExcelJS!=="undefined";
+}
+
+// Excel file with dropdown lists (ExcelJS)
+async function buildExcelJSBlob(){
+  const wb=new ExcelJS.Workbook();
+  wb.calcProperties={fullCalcOnLoad:true};
+  const proj="Project Name: "+(state.project||"");
+  const HEAD={type:"pattern",pattern:"solid",fgColor:{argb:"FF2F5597"}};
+  const PROJ={type:"pattern",pattern:"solid",fgColor:{argb:"FFDCE6F8"}};
+  const GREY={type:"pattern",pattern:"solid",fgColor:{argb:"FFF2F2F2"}};
+  const projRow=(ws,cols,text)=>{
+    ws.addRow([text||proj]);ws.mergeCells(1,1,1,cols);
+    const c=ws.getCell(1,1);c.font={name:"Arial",bold:true,size:12};c.fill=PROJ;
+  };
+  const headRow=(ws,labels)=>{
+    const r=ws.addRow(labels);
+    r.eachCell(c=>{c.font={name:"Arial",bold:true,color:{argb:"FFFFFFFF"}};c.fill=HEAD;c.alignment={vertical:"middle",wrapText:true}});
+  };
+  const dataRow=(ws,vals)=>{
+    const r=ws.addRow(vals);
+    r.eachCell({includeEmpty:true},c=>{c.font={name:"Arial",size:10};c.alignment={vertical:"top",wrapText:true}});
+    return r;
+  };
+  const widths=(ws,w)=>w.forEach((x,i)=>{ws.getColumn(i+1).width=x});
+  const dropdown=(ws,col,list,from,to)=>{
+    for(let r=from;r<=to;r++){
+      ws.getCell(col+r).dataValidation={type:"list",allowBlank:true,formulae:['"'+list.join(",")+'"'],
+        showErrorMessage:true,errorStyle:"error",errorTitle:"Invalid value",error:"Please pick a value from the list."};
+    }
+  };
+  const addImgs=(ws,imgs,r,col0)=>{   // pictures sit in the same row, in the Image columns to the right
+    if(!imgs||!imgs.length)return;
+    ws.getRow(r).height=84;
+    imgs.slice(0,MAX_IMAGES).forEach((im,k)=>{
+      const id=wb.addImage({base64:im.data,extension:"jpeg"});
+      let w=im.w&&im.h?Math.round(im.w*100/im.h):150,h=100;
+      if(w>150){h=Math.round(h*150/w);w=150}
+      ws.addImage(id,{tl:{col:col0+k+0.05,row:r-1+0.05},ext:{width:w,height:h},editAs:"oneCell"});
+    });
+  };
+  const DQ=p=>"'Defects - "+p+"'";                 // quoted defect sheet name per platform
+  const IMGS=["Image 1","Image 2","Image 3","Image 4","Image 5"];
+
+  // ---- Test Cases (all platforms). Column F is a formula: follows the linked defect(s), otherwise Manual Status (G)
+  const w1=wb.addWorksheet("Test Cases");
+  projRow(w1,15);
+  headRow(w1,["TestCase ID","TestCase Name","Given","When","Then","TestCase Status","Manual Status","Linked Defect Status","Tested By","Platform",...IMGS]);
+  const last1=Math.max(500,state.cases.length+102);
+  // a test case's defects live on its platform's sheet, so count across all three (the ID only matches in one)
+  const cnt2=(r,st)=>"("+PLATFORMS.map(p=>'COUNTIFS('+DQ(p)+'!$B$3:$B$5000,A'+r+','+DQ(p)+'!$G$3:$G$5000,"'+st+'")').join("+")+")";
+  const hF=r=>'IF(A'+r+'="","",IF('+cnt2(r,"Open")+'>0,"Open",IF('+cnt2(r,"Ready To Test")+'>0,"Ready To Test",IF('+cnt2(r,"In Progress")+'>0,"In Progress",IF('+cnt2(r,"Yet To Be Tested")+'>0,"Yet To Be Tested",IF('+cnt2(r,"Fixed")+'>0,"Fixed",IF('+cnt2(r,"Closed")+'>0,"Closed","")))))))';
+  const mapF=(h,g)=>'IF('+h+'="Fixed","Passed",IF('+h+'="Open","Failed",IF('+h+'="Ready To Test","Failed",IF('+h+'="In Progress","In-Progress",IF('+h+'="Yet To Be Tested","Yet To Be Tested",IF('+h+'="Closed","Closed",'+g+'))))))';
+  for(let r=3;r<=last1;r++){
+    const c=state.cases[r-3],gs=c?governing(c.id):null;
+    dataRow(w1,[c?c.id:"",c?c.name:"",c?c.given:"",c?c.when:"",c?c.then:"",
+      {formula:'IF(A'+r+'="","",IF(H'+r+'="",G'+r+','+mapF('H'+r,'G'+r)+'))',result:c?c.status:""},
+      c?c.status:"",
+      {formula:hF(r),result:gs||""},c?(c.testedBy||""):"",c?(c.platform||DEFAULT_PLATFORM):""]);
+    const row=w1.getRow(r);
+    [1,2,3,4,5,7,9,10].forEach(k=>{row.getCell(k).protection={locked:false}});   // only F and H stay locked
+    [6,8].forEach(k=>{row.getCell(k).fill=GREY});
+    if(c)addImgs(w1,c.images,r,10);
+  }
+  widths(w1,[14,26,40,32,32,22,20,22,22,14,22,22,22,22,22]);
+  dropdown(w1,"G",STATUSES,3,last1);
+  dropdown(w1,"J",PLATFORMS,3,last1);
+  w1.views=[{state:"frozen",ySplit:2}];
+  await w1.protect("",{selectLockedCells:true,selectUnlockedCells:true,formatCells:true,formatColumns:true,formatRows:true,insertRows:true,deleteRows:true,sort:true,autoFilter:true});   // no password: Review > Unprotect Sheet
+
+  // ---- One Defects sheet per platform (a defect goes to the platform of its test case)
+  PLATFORMS.forEach(p=>{
+    const w=wb.addWorksheet("Defects - "+p);
+    projRow(w,15,proj+"  |  Platform: "+p);
+    headRow(w,["Defect ID","TestCase ID","TestCase Name","Title","Description","Severity","Status","Assigned To","Created","Closing Comment",...IMGS]);
+    defsForPlat(p).forEach(d=>{const tc=state.cases.find(c=>c.id===d.tcId);
+      const rw=dataRow(w,[d.id,d.tcId,tc?tc.name:"",d.title,d.description,d.severity,d.status,d.assignee||"",d.created,d.comment||""]);
+      addImgs(w,d.images,rw.number,10)});
+    widths(w,[12,14,24,34,50,12,18,22,12,40,22,22,22,22,22]);
+    const last=Math.max(500,state.defects.length+102);
+    dropdown(w,"F",SEV,3,last);
+    dropdown(w,"G",D_STATUS,3,last);
+    w.views=[{state:"frozen",ySplit:2}];
+  });
+
+  // ---- Combined Defects sheet: every platform in one place (snapshot taken at download)
+  const wc=wb.addWorksheet("Defects - Combined");
+  projRow(wc,16,proj+"  |  All platforms (snapshot at download - edit defects on the platform sheets, the Stats sheets read from those)");
+  headRow(wc,["Defect ID","Platform","TestCase ID","TestCase Name","Title","Description","Severity","Status","Assigned To","Created","Closing Comment",...IMGS]);
+  PLATFORMS.forEach(p=>defsForPlat(p).forEach(d=>{const tc=state.cases.find(c=>c.id===d.tcId);
+    const rw=dataRow(wc,[d.id,p,d.tcId,tc?tc.name:"",d.title,d.description,d.severity,d.status,d.assignee||"",d.created,d.comment||""]);
+    addImgs(wc,d.images,rw.number,11)}));
+  widths(wc,[12,12,14,24,34,50,12,18,22,12,40,22,22,22,22,22]);
+  const lastC=Math.max(500,state.defects.length+102);
+  dropdown(wc,"G",SEV,3,lastC);
+  dropdown(wc,"H",D_STATUS,3,lastC);
+  wc.views=[{state:"frozen",ySplit:2}];
+
+  // ---- Stats sheets with live formulas: plat = one platform, null = combined
+  const TS="'Test Cases'!$F$3:$F$5000",TA="'Test Cases'!$A$3:$A$5000",TP="'Test Cases'!$J$3:$J$5000";
+  const statsSheet=(name,plat)=>{
+    const s=calc(plat),ds=dcalc(plat),cs=casesFor(plat),dl=defsForPlat(plat);
+    const plats=plat?[plat]:PLATFORMS;
+    const ws=wb.addWorksheet(name);
+    projRow(ws,3,proj+"  |  "+(plat?"Platform: "+plat:"All platforms (combined)"));
+    headRow(ws,["Test Case Metric","Value","Definition"]);
+    const tcnt=(...v)=>v.map(x=>plat?'COUNTIFS('+TS+',"'+x+'",'+TP+',"'+plat+'")':'COUNTIF('+TS+',"'+x+'")').join("+");
+    const dcnt=(col,...v)=>plats.map(p=>v.map(x=>'COUNTIF('+DQ(p)+'!$'+col+'$3:$'+col+'$5000,"'+x+'")').join("+")).join("+");
+    const dTotalF=plats.map(p=>'COUNTA('+DQ(p)+'!$A$3:$A$5000)').join("+");
+    const dbSum=plats.map(p=>'COUNTIF('+DQ(p)+'!$B$3:$B$5000,'+TA+')').join("+");
+    const stat=(label,formula,result,def,isPct)=>{
+      const r=dataRow(ws,[label,{formula,result},def]);
+      if(isPct)r.getCell(2).numFmt="0.0%";
+      return r.number;
+    };
+    const tTotal=stat("Total Test Cases",plat?'COUNTIFS('+TP+',"'+plat+'")':"COUNTA("+TA+")",s.total,"All test cases");
+    const tExec=stat("Total Executed",tcnt("Passed","Failed","Blocked","Closed"),s.executed,"Passed, Failed, Blocked & Closed");
+    const tRem=stat("Total Remaining",tcnt("In-Progress","Yet To Be Tested"),s.remaining,"In-Progress & Yet To Be Tested");
+    stat("Percentage Executed","IF(B"+tTotal+"=0,0,B"+tExec+"/B"+tTotal+")",s.pe,"Executed / Total test cases",true);
+    stat("Percentage Remaining","IF(B"+tTotal+"=0,0,B"+tRem+"/B"+tTotal+")",s.pr,"Remaining / Total test cases",true);
+    ws.addRow([]);
+    headRow(ws,["Test Cases by Status","Count","% of Total Test Cases"]);
+    STATUSES.forEach(st=>{
+      const n=cs.filter(c=>c.status===st).length;
+      const r=dataRow(ws,[st,{formula:tcnt(st),result:n},""]);
+      const c3=r.getCell(3);
+      c3.value={formula:"IF(B"+tTotal+"=0,0,B"+r.number+"/B"+tTotal+")",result:s.total?n/s.total:0};
+      c3.numFmt="0.0%";c3.alignment={horizontal:"left",vertical:"top"};
+    });
+    ws.addRow([]);
+    headRow(ws,["Defect Metric","Value","Definition"]);
+    const dTotal=stat("Total Defects",dTotalF,ds.total,"All logged defects");
+    stat("Open Defects",dcnt("G","Open","In Progress"),ds.open,"Open & In Progress");
+    stat("Awaiting retest/Fixed",dcnt("G","Yet To Be Tested","Ready To Test","Fixed"),ds.retest,"Yet To Be Tested, Ready To Test & Fixed");
+    const dClosed=stat("Closed Defects",dcnt("G","Closed"),ds.closed,"Closed");
+    stat("Percentage Closed","IF(B"+dTotal+"=0,0,B"+dClosed+"/B"+dTotal+")",ds.pc,"Closed / Total defects",true);
+    SEV.forEach(v=>stat(v+" Defects",dcnt("F",v),ds.sev[v],"Severity = "+v));
+    stat("Failed Without Defect",'SUMPRODUCT(('+TS+'="Failed")*'+(plat?'('+TP+'="'+plat+'")*':'')+'(('+dbSum+')=0))',ds.noDef,"Failed test cases with no defect logged");
+    ws.addRow([]);
+    headRow(ws,["Defects by Status","Count","% of Total Defects"]);
+    D_STATUS.forEach(st=>{
+      const n=dl.filter(d=>d.status===st).length;
+      const r=dataRow(ws,[st,{formula:dcnt("G",st),result:n},""]);
+      const c3=r.getCell(3);
+      c3.value={formula:"IF(B"+dTotal+"=0,0,B"+r.number+"/B"+dTotal+")",result:ds.total?n/ds.total:0};
+      c3.numFmt="0.0%";c3.alignment={horizontal:"left",vertical:"top"};
+    });
+    ws.addRow([]);
+    dataRow(ws,["Exported from Test Case Manager v"+APP_VERSION,"",""]);
+    widths(ws,[26,12,42]);
+  };
+  PLATFORMS.forEach(p=>statsSheet("Stats - "+p,p));
+  statsSheet("Stats - Combined",null);
+
+  const buf=await wb.xlsx.writeBuffer();
+  return new Blob([buf],{type:XLSX_MIME});
+}
+
+async function makeXlsxBlob(){
+  if(!(await ensureExcelJS()))throw new Error("The Excel library could not load (internet is needed)");
+  return{blob:await buildExcelJSBlob(),dropdowns:true};
+}
+
+function saveBlob(filename,blob){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=filename;a.style.display="none";
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+$("export").addEventListener("click",async()=>{
+  try{
+    const made=await makeXlsxBlob(),blob=made.blob;
+    const base=(state.project||"test-cases").trim().replace(/[^\w\-]+/g,"_")||"test-cases";
+    const filename=base+"_testcases.xlsx";
+    const downloads=await getDownloads();   // only exists when opened inside claude.ai
+    if(downloads){await downloads.save({filename,data:blob})}
+    else{saveBlob(filename,blob)}           // normal browser download to your Downloads folder
+    say("Excel file downloaded: "+filename+(made.dropdowns?"":" (dropdown lists could not be added because the Excel library did not load)"));
+  }catch(e){say(e&&e.code==="declined"?"Download cancelled.":"Download failed ("+((e&&(e.code||e.message))||"error")+").");showFallback()}
+});
+
+sanitizeState();
+state.cases.forEach(c=>{if(!PLATFORMS.includes(c.platform))c.platform=DEFAULT_PLATFORM});
+state.cases.forEach(c=>syncCase(c.id));
+if(!state.cases.length)state.cases.push(newCase());
+render();
+</script>
+<script>
+// ===== Top-level tab switching =====
+(function(){
+  const tcm=document.getElementById("tcmApp"),env=document.getElementById("envApp");
+  const bT=document.getElementById("appTcm"),bE=document.getElementById("appEnv");
+  function show(a){
+    const isEnv=a==="env";
+    tcm.hidden=isEnv;env.hidden=!isEnv;
+    bT.className="atab"+(isEnv?"":" on");bE.className="atab"+(isEnv?" on":"");
+    try{localStorage.setItem("tcm-app",isEnv?"env":"tcm")}catch(e){}
+  }
+  bT.addEventListener("click",()=>show("tcm"));bE.addEventListener("click",()=>show("env"));
+  let a="tcm";try{a=localStorage.getItem("tcm-app")==="env"?"env":"tcm"}catch(e){}
+  show(a);
+})();
+
+// ===== Environment downtime log =====
+(function(){
+  const g=id=>document.getElementById("dl_"+id);
+  const KEY="envdown";
+  const CATS=["Deployment","Infrastructure","Database","Network","Test data","Third-party service","Config change","Planned maintenance","Unknown"];
+  const SEVS=["Critical","Major","Minor"];
+  const DT=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+  let items=[],editId=null;
+
+  function mins(a,b){return Math.max(0,Math.round((new Date(b)-new Date(a))/60000))}
+  function fmt(m){const h=Math.floor(m/60),r=m%60;return h?h+"h "+r+"m":r+"m"}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+  function load(){   // saved data is re-validated: types, lengths, allowed values
+    let raw;try{raw=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){raw=[]}
+    items=(Array.isArray(raw)?raw:[]).slice(0,5000)
+      .filter(x=>x&&typeof x==="object"&&typeof x.start==="string"&&typeof x.end==="string"&&DT.test(x.start)&&DT.test(x.end))
+      .map((x,k)=>({id:cleanText(String(x.id==null?"":x.id),40)||("i"+k+Date.now().toString(36)),env:cleanText(x.env,100).trim(),
+        cat:CATS.includes(x.cat)?x.cat:"Unknown",start:x.start.slice(0,16),end:x.end.slice(0,16),sev:SEVS.includes(x.sev)?x.sev:"Major",
+        ticket:cleanText(x.ticket,100),impact:cleanText(x.impact,500),affected:cleanText(x.affected,200),notes:cleanText(x.notes),mins:mins(x.start,x.end)}))
+      .filter(x=>x.env);
+  }
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
+  function showDur(){const s=g("start").value,e=g("end").value;g("dur").textContent=s&&e&&e>s?"Duration: "+fmt(mins(s,e)):""}
+  function nowLocal(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
+  function reset(){
+    editId=null;["env","ticket","impact","affected","notes"].forEach(i=>g(i).value="");
+    g("start").value="";g("end").value=nowLocal();g("sev").value="Major";
+    g("formTitle").textContent="Log an outage";g("cancel").hidden=true;g("err").textContent="";showDur();
+  }
+  function save(){
+    const o={env:g("env").value.trim().slice(0,100),cat:g("cat").value,start:g("start").value,end:g("end").value,sev:g("sev").value,
+      ticket:g("ticket").value.trim().slice(0,100),impact:g("impact").value.trim().slice(0,500),affected:g("affected").value.trim().slice(0,200),notes:g("notes").value.trim().slice(0,LIM.text)};
+    if(!o.env||!o.start||!o.end){g("err").textContent="Enter the environment, start time and end time.";return}
+    if(o.end<=o.start){g("err").textContent="End time must be after the start time.";return}
+    o.mins=mins(o.start,o.end);
+    if(editId){items=items.map(x=>x.id===editId?{...o,id:editId}:x)}else{o.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);items.push(o)}
+    persist();reset();render();
+  }
+  function edit(id){
+    const x=items.find(i=>i.id===id);if(!x)return;editId=id;
+    ["env","cat","start","end","sev","ticket","impact","affected","notes"].forEach(k=>g(k).value=x[k]||"");
+    g("formTitle").textContent="Edit outage";g("cancel").hidden=false;showDur();window.scrollTo({top:0,behavior:"smooth"});
+  }
+  function del(id){if(confirm("Delete this outage?")){items=items.filter(i=>i.id!==id);persist();render()}}
+  function render(){
+    const envs=[...new Set(items.map(i=>i.env))].sort();
+    g("envs").innerHTML=envs.map(e=>`<option value="${esc(e)}">`).join("");
+    const cur=g("fEnv").value;
+    g("fEnv").innerHTML='<option value="">All environments</option>'+envs.map(e=>`<option${e===cur?" selected":""}>${esc(e)}</option>`).join("");
+    const q=g("fQ").value.toLowerCase(),fs=g("fSev").value,fe=g("fEnv").value;
+    const v=items.filter(i=>(!fe||i.env===fe)&&(!fs||i.sev===fs)&&(!q||(i.notes+i.ticket+i.impact+(i.affected||"")).toLowerCase().includes(q))).sort((a,b)=>b.start.localeCompare(a.start));
+    const tot=v.reduce((s,i)=>s+i.mins,0),by={};v.forEach(i=>by[i.env]=(by[i.env]||0)+i.mins);
+    const worst=Object.entries(by).sort((a,b)=>b[1]-a[1])[0];
+    g("sCount").textContent=v.length;g("sTotal").textContent=fmt(tot);g("sWorst").textContent=worst?worst[0]:"–";
+    g("list").innerHTML=v.length?v.map(i=>`<div class="e-entry"><div class="e-top"><strong>${esc(i.env)}</strong><span class="e-d">${fmt(i.mins)}</span></div>
+<div class="e-meta"><span class="e-tag e-${esc(i.sev)}">${esc(i.sev)}</span>${esc(i.cat)}${i.ticket?" · "+esc(i.ticket):""}</div>
+<div class="e-meta">${esc(new Date(i.start).toLocaleString())} to ${esc(new Date(i.end).toLocaleString())}</div>
+${i.impact?`<div>${esc(i.impact)}</div>`:""}${i.affected?`<div class="e-meta">Affected: ${esc(i.affected)}</div>`:""}${i.notes?`<div class="e-meta">${esc(i.notes)}</div>`:""}
+<div class="e-acts"><button data-act="edit" data-id="${esc(i.id)}">Edit</button><button data-act="del" data-id="${esc(i.id)}">Delete</button></div></div>`).join(""):'<div class="e-empty">No outages logged yet. Fill in the form above to add the first one.</div>';
+  }
+
+  async function exportXlsx(){
+    if(!items.length){alert("There are no outages to export yet.");return}
+    if(!(await ensureExcelJS())){alert("The Excel library did not load. Check your connection and reload the page.");return}
+    const rows=[...items].sort((a,b)=>a.start.localeCompare(b.start));
+    const t=s=>String(s||"").replace("T"," ");
+    const n=rows.length,last=n+1;
+    const wb=new ExcelJS.Workbook();wb.calcProperties={fullCalcOnLoad:true};
+    const HEAD={type:"pattern",pattern:"solid",fgColor:{argb:"FF0B6E8A"}};
+    const head=r=>r.eachCell(c=>{c.font={bold:true,color:{argb:"FFFFFFFF"}};c.fill=HEAD});
+    // Log sheet
+    const w1=wb.addWorksheet("Log");
+    head(w1.addRow(["Environment","Cause category","Severity","Start","End","Duration (minutes)","Duration (hours)","Ticket ID","Testing impact","Affected person/team","Notes"]));
+    rows.forEach((i,k)=>w1.addRow([i.env,i.cat,i.sev,t(i.start),t(i.end),i.mins,{formula:"ROUND(F"+(k+2)+"/60,2)",result:Math.round(i.mins/60*100)/100},i.ticket,i.impact,i.affected||"",i.notes]));
+    [16,20,10,17,17,18,16,14,30,26,40].forEach((w,i)=>{w1.getColumn(i+1).width=w});
+    w1.views=[{state:"frozen",ySplit:1}];
+    // Stats sheet (live formulas, same layout as before)
+    const by={},cnt={};let total=0;
+    rows.forEach(i=>{total+=i.mins;by[i.env]=(by[i.env]||0)+i.mins;cnt[i.env]=(cnt[i.env]||0)+1});
+    const envs=Object.entries(by).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+    const e0=9,e1=e0+envs.length-1;
+    const w2=wb.addWorksheet("Stats");
+    const set=(a,v)=>{w2.getCell(a).value=v};
+    set("A1","Environment downtime stats");w2.getCell("A1").font={bold:true,size:13};
+    set("A3","Total time lost (minutes)");set("B3",{formula:"SUM(Log!F2:F"+last+")",result:total});
+    set("A4","Total time lost (hours)");set("B4",{formula:"ROUND(B3/60,1)",result:Math.round(total/6)/10});
+    set("A5","Outages");set("B5",{formula:"COUNTA(Log!A2:A"+last+")",result:n});
+    set("A6","Most affected");set("B6",{formula:"INDEX(A"+e0+":A"+e1+",MATCH(MAX(C"+e0+":C"+e1+"),C"+e0+":C"+e1+",0))",result:envs[0]||""});
+    ["A8","B8","C8"].forEach((a,i)=>{set(a,["Environment","Outages","Time lost (minutes)"][i]);w2.getCell(a).font={bold:true,color:{argb:"FFFFFFFF"}};w2.getCell(a).fill=HEAD});
+    envs.forEach((e,k)=>{const r=e0+k;
+      set("A"+r,e);
+      set("B"+r,{formula:"COUNTIF(Log!$A$2:$A$"+last+",A"+r+")",result:cnt[e]});
+      set("C"+r,{formula:"SUMIF(Log!$A$2:$A$"+last+",A"+r+",Log!$F$2:$F$"+last+")",result:by[e]});
+    });
+    [28,14,20].forEach((w,i)=>{w2.getColumn(i+1).width=w});
+    const blob=new Blob([await wb.xlsx.writeBuffer()],{type:XLSX_MIME});
+    const fname="env-downtime-"+new Date().toISOString().slice(0,10)+".xlsx";
+    try{
+      const dl=await getDownloads();
+      if(dl)await dl.save({filename:fname,data:blob});else saveBlob(fname,blob);
+    }catch(e){if(!e||e.code!=="declined")alert("The file could not be saved. Please try again.")}
+  }
+
+  g("save").addEventListener("click",save);
+  g("cancel").addEventListener("click",reset);
+  g("export").addEventListener("click",exportXlsx);
+  g("list").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-act]");if(!b)return;
+    if(b.dataset.act==="edit")edit(b.dataset.id);else if(b.dataset.act==="del")del(b.dataset.id);
+  });
+  ["start","end"].forEach(i=>g(i).addEventListener("input",showDur));
+  ["fEnv","fSev","fQ"].forEach(i=>g(i).addEventListener("input",render));
+  load();reset();render();
+})();
+</script>
+</body>
+</html>
